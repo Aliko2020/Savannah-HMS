@@ -1,4 +1,5 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import { PrinterIcon } from '../Icons.jsx';
 import { money, formatDateTime, PAY_LABEL } from '../api.js';
 import { useSettings } from '../SettingsContext.jsx';
 import Modal from './Modal.jsx';
@@ -70,12 +71,35 @@ export default function Receipt({ sale, onClose, actions }) {
   const frame = useRef(null);
   const html = receiptHtml(sale, settings);
 
-  const print = () => {
+  // Print, then close the receipt automatically once the print dialog is finished.
+  const printAndClose = () => {
     const w = frame.current?.contentWindow;
     if (!w) return;
+    let closed = false;
+    const close = () => {
+      if (!closed) {
+        closed = true;
+        onClose();
+      }
+    };
+    w.addEventListener('afterprint', close, { once: true });
     w.focus();
     w.print();
+    // Some browsers don't fire 'afterprint'; print() blocks until the dialog closes there.
+    setTimeout(close, 500);
   };
+
+  // Enter key = print and close, so the attendant can keep their hands on the keyboard/scanner.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Enter' && !e.repeat && !(e.target instanceof HTMLButtonElement)) {
+        e.preventDefault();
+        printAndClose();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   return (
     <Modal onClose={onClose} title={`Sale #${sale.id}`}>
@@ -94,8 +118,10 @@ export default function Receipt({ sale, onClose, actions }) {
       </div>
       <div className="modal-actions">
         {actions}
-        <button className="btn" onClick={print}>Print receipt</button>
-        <button className="btn primary" onClick={onClose}>Done</button>
+        <button className="btn" onClick={onClose}>Done (no print)</button>
+        <button className="btn primary with-icon" onClick={printAndClose} autoFocus>
+          <PrinterIcon size={18} /> Print &amp; close
+        </button>
       </div>
     </Modal>
   );
