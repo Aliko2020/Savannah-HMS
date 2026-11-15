@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, money, localDate } from '../api.js';
+import { api, money, localDate, PAY_LABEL } from '../api.js';
 
 const daysAgo = (n) => {
   const d = new Date();
@@ -86,7 +86,7 @@ export default function Dashboard() {
               <h2>By payment</h2>
               <MiniTable
                 rows={summary.byPayment}
-                cols={[['Method', (r) => r.payment_method], ['Sales', (r) => r.sales_count, true], ['Revenue', (r) => money(r.revenue), true]]}
+                cols={[['Method', (r) => PAY_LABEL[r.payment_method] || r.payment_method], ['Sales', (r) => r.sales_count, true], ['Revenue', (r) => money(r.revenue), true]]}
               />
             </div>
           </div>

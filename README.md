@@ -7,7 +7,7 @@ Built with React (frontend), Node.js/Express (backend) and SQLite (a database st
 
 | | Owner | Attendant |
 |---|:---:|:---:|
-| Sell: search or scan barcode, cart, cash/card/mobile money, printable receipt | ✅ | ✅ |
+| Sell: search or scan barcode, cart, Cash or Mobile Money, thermal printer receipt | ✅ | ✅ |
 | See stock levels and prices | ✅ | ✅ (no cost prices) |
 | Add/edit/archive products, set expiry and reorder levels | ✅ | |
 | Restock, correct counts, write off expired/damaged stock | ✅ | |
@@ -17,6 +17,7 @@ Built with React (frontend), Node.js/Express (backend) and SQLite (a database st
 | Dashboard: revenue, profit, top products, sales by staff and payment method | ✅ | |
 | Alerts: low stock, expired, expiring within 60 days | ✅ | |
 | Manage staff accounts (add, reset password, disable) | ✅ | |
+| Settings: shop name, phone, address, receipt message, paper width | ✅ | |
 
 Safety checks built in:
 - Expired products can't be sold.
@@ -41,9 +42,18 @@ Open http://localhost:5173 and log in as **admin** / **admin123**. **Change the 
 
 The database is created automatically the first time you start the app.
 
-Optional settings:
-- `client/.env` (copy from `client/.env.example`): currency symbol and shop name.
-- `server/.env` (copy from `server/.env.example`): first admin login, database location, port.
+Then open **Settings** (owner only) and enter your shop name, phone number and address. They appear at the top of the app and on every receipt. Prices are in Ghana cedis (GH₵).
+
+Optional: `server/.env` (copy from `server/.env.example`) changes the first admin login, database location or port.
+
+### Receipt printer (thermal)
+1. Install your printer's Windows driver and check it prints a test page.
+2. In **Settings**, choose the paper roll width: **80 mm** (most common) or **58 mm**.
+3. After a sale, click **Print receipt**. In the print window:
+   - Printer: your thermal printer
+   - More settings → Margins: **None**, Scale: **100**, and untick **Headers and footers**
+   
+   Chrome and Edge remember these choices for next time.
 
 ### Using it on the shop's other devices
 While the app runs on the shop PC, phones and laptops on the **same Wi-Fi** can open it at `http://<shop-PC-IP>:5173`. To find the PC's IP address, run `ipconfig` and look for "IPv4 Address". If it doesn't open, allow Node.js through Windows Firewall when asked.

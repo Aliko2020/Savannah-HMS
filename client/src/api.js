@@ -22,11 +22,14 @@ export async function api(path, { method = 'GET', body } = {}) {
   return data;
 }
 
-const CURRENCY = import.meta.env.VITE_CURRENCY || '$';
-export const SHOP_NAME = import.meta.env.VITE_SHOP_NAME || 'Savannah Pharmacy';
+// Currency symbol comes from the shop's Settings page (default: Ghana cedi).
+let currency = 'GH₵';
+export const setCurrency = (c) => { currency = c || 'GH₵'; };
 
 export const money = (n) =>
-  CURRENCY + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  `${currency} ${Number(n || 0).toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+export const PAY_LABEL = { cash: 'Cash', mobile: 'Mobile Money', card: 'Card' };
 
 /** Local date as YYYY-MM-DD. */
 export const localDate = (d = new Date()) =>

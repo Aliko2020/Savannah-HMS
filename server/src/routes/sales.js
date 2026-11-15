@@ -5,7 +5,8 @@ import { requireAuth, requireAdmin, HttpError } from '../auth.js';
 const router = Router();
 router.use(requireAuth);
 
-const PAYMENT_METHODS = ['cash', 'card', 'mobile'];
+// The shop accepts cash and mobile money (MoMo) only.
+const PAYMENT_METHODS = ['cash', 'mobile'];
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
 
 /**
@@ -15,7 +16,7 @@ const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
 router.post('/', (req, res) => {
   const { items, paymentMethod = 'cash', customerName } = req.body || {};
   if (!Array.isArray(items) || items.length === 0) throw new HttpError(400, 'The cart is empty');
-  if (!PAYMENT_METHODS.includes(paymentMethod)) throw new HttpError(400, 'Invalid payment method');
+  if (!PAYMENT_METHODS.includes(paymentMethod)) throw new HttpError(400, 'Payment must be cash or mobile money');
 
   // Merge duplicate lines for the same product.
   const wanted = new Map();

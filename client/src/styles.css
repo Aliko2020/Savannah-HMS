@@ -123,7 +123,7 @@ td.actions { text-align: right; white-space: nowrap; }
 .qty { display: flex; align-items: center; gap: 0.25rem; }
 .qty input { width: 3.5rem; text-align: center; padding: 0.3rem; }
 .total { display: flex; justify-content: space-between; font-size: 1.3rem; padding-top: 0.5rem; border-top: 2px solid var(--text); }
-.pay-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; }
+.pay-methods { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.4rem; }
 
 /* Dashboard */
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1rem; }
@@ -144,11 +144,12 @@ td.actions { text-align: right; white-space: nowrap; }
 .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
 
-/* Receipt */
-.receipt h3 { margin: 0 0 0.25rem; text-align: center; }
-.receipt > p { text-align: center; margin-top: 0; }
-.receipt td, .receipt th { padding: 0.35rem 0.25rem; }
-.thanks { text-align: center; margin-top: 1rem; }
+/* Receipt preview: the receipt is a separate page shown in a frame */
+.receipt-preview { display: flex; justify-content: center; background: #eceff1; padding: 0.75rem; border-radius: 8px; }
+.receipt-preview iframe { border: 0; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.15); min-height: 200px; max-width: 100%; }
+.settings-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 1rem; align-items: start; }
+.settings-layout form h2 { margin-top: 1.25rem; }
+.settings-layout form h2:first-child { margin-top: 0; }
 
 @media (max-width: 900px) {
   .sell { grid-template-columns: 1fr; }
@@ -156,16 +157,9 @@ td.actions { text-align: right; white-space: nowrap; }
   .stats { grid-template-columns: 1fr 1fr; }
   .grid2 { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
+  .settings-layout { grid-template-columns: 1fr; }
   main { padding: 0.75rem; }
   .topbar { gap: 0.5rem; padding: 0.5rem 0.75rem; }
   .brand { flex: 1; }
   .topbar nav { order: 3; flex-basis: 100%; flex-wrap: nowrap; overflow-x: auto; }
-}
-
-/* Print only the receipt */
-@media print {
-  body * { visibility: hidden; }
-  #receipt, #receipt * { visibility: visible; }
-  #receipt { position: absolute; left: 0; top: 0; width: 80mm; font-size: 12px; }
-  .no-print { display: none !important; }
 }

@@ -9,6 +9,7 @@ import userRoutes from './routes/users.js';
 import productRoutes from './routes/products.js';
 import saleRoutes from './routes/sales.js';
 import reportRoutes from './routes/reports.js';
+import settingsRoutes from './routes/settings.js';
 
 const app = express();
 app.use(express.json({ limit: '100kb' }));
@@ -19,6 +20,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/sales', saleRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/settings', settingsRoutes);
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));
 
 // In production, serve the built React app from the same server.

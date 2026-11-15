@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api, money, localDate } from '../api.js';
+import { api, money, localDate, PAY_LABEL } from '../api.js';
 import Receipt from './Receipt.jsx';
 
 export default function Sell() {
@@ -155,9 +155,9 @@ export default function Sell() {
         </div>
 
         <div className="pay-methods">
-          {['cash', 'card', 'mobile'].map((m) => (
+          {['cash', 'mobile'].map((m) => (
             <button key={m} className={'btn' + (payment === m ? ' primary' : '')} onClick={() => setPayment(m)}>
-              {m === 'mobile' ? 'Mobile money' : m[0].toUpperCase() + m.slice(1)}
+              {PAY_LABEL[m]}
             </button>
           ))}
         </div>

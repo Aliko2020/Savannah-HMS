@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, money, localDate, formatDateTime } from '../api.js';
+import { api, money, localDate, formatDateTime, PAY_LABEL } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import Receipt from './Receipt.jsx';
 
@@ -73,7 +73,7 @@ export default function Sales() {
                 <td>{formatDateTime(s.created_at)}</td>
                 {isAdmin && <td>{s.seller_name}</td>}
                 <td>{s.customer_name || '—'}</td>
-                <td>{s.payment_method}</td>
+                <td>{PAY_LABEL[s.payment_method] || s.payment_method}</td>
                 <td className="num">{s.item_count}</td>
                 <td className="num">
                   {s.voided_at ? <span className="badge danger">Voided</span> : money(s.total)}

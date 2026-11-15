@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
-import { SHOP_NAME } from '../api.js';
+import { useSettings } from '../SettingsContext.jsx';
 
 export default function Login() {
   const { login } = useAuth();
+  const { settings } = useSettings();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -29,7 +30,7 @@ export default function Login() {
   return (
     <div className="center">
       <form className="card login" onSubmit={submit}>
-        <h1>{SHOP_NAME}</h1>
+        <h1>{settings.shop_name}</h1>
         <p className="muted">Sign in to continue</p>
         {error && <div className="alert error">{error}</div>}
         <label>
