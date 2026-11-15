@@ -37,9 +37,5 @@ app.use((err, _req, res, _next) => {
 });
 
 const port = Number(process.env.PORT) || 4000;
-initDb()
-  .then(() => app.listen(port, () => console.log(`Savannah HMS API running on http://localhost:${port}`)))
-  .catch((err) => {
-    console.error('Could not connect to the database:', err.message);
-    process.exit(1);
-  });
+initDb();
+app.listen(port, () => console.log(`Savannah HMS API running on http://localhost:${port}`));

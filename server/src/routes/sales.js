@@ -1,17 +1,18 @@
 import { Router } from 'express';
-import { query, withTransaction, today } from '../db.js';
-import { asyncHandler, requireAuth, requireAdmin, HttpError } from '../auth.js';
+import { all, get, run, transaction, today, now, round2 } from '../db.js';
+import { requireAuth, requireAdmin, HttpError } from '../auth.js';
 
 const router = Router();
 router.use(requireAuth);
 
 const PAYMENT_METHODS = ['cash', 'card', 'mobile'];
+const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
 
 /**
  * Record a sale: { items: [{ productId, quantity }], paymentMethod, customerName }
  * Prices always come from the database, never from the browser.
  */
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', (req, res) => {
   const { items, paymentMethod = 'cash', customerName } = req.body || {};
   if (!Array.isArray(items) || items.length === 0) throw new HttpError(400, 'The cart is empty');
   if (!PAYMENT_METHODS.includes(paymentMethod)) throw new HttpError(400, 'Invalid payment method');
@@ -25,61 +26,52 @@ router.post('/', asyncHandler(async (req, res) => {
     wanted.set(id, (wanted.get(id) || 0) + qty);
   }
 
-  const sale = await withTransaction(async (c) => {
-    // Lock rows in id order to avoid deadlocks between two tills.
-    const ids = [...wanted.keys()].sort((a, b) => a - b);
-    const { rows: products } = await c.query(
-      'SELECT * FROM products WHERE id = ANY($1) ORDER BY id FOR UPDATE',
-      [ids]
-    );
-    const byId = new Map(products.map((p) => [p.id, p]));
+  const saleId = transaction(() => {
     const todayStr = today();
-
     let total = 0;
     const lines = [];
     for (const [id, qty] of wanted) {
-      const p = byId.get(id);
+      const p = get('SELECT * FROM products WHERE id = ?', id);
       if (!p || !p.active) throw new HttpError(400, 'A product in the cart is no longer available');
       if (p.expiry_date && p.expiry_date < todayStr) throw new HttpError(400, `${p.name} has expired and cannot be sold`);
       if (p.quantity < qty) throw new HttpError(400, `Only ${p.quantity} of ${p.name} left in stock`);
-      total += Number(p.selling_price) * qty;
+      total += p.selling_price * qty;
       lines.push({ p, qty });
     }
-    total = Math.round(total * 100) / 100;
 
-    const { rows: [s] } = await c.query(
-      `INSERT INTO sales (user_id, total, payment_method, customer_name) VALUES ($1, $2, $3, $4) RETURNING *`,
-      [req.user.id, total, paymentMethod, customerName?.trim() || null]
+    const { lastInsertRowid: id } = run(
+      'INSERT INTO sales (user_id, total, payment_method, customer_name) VALUES (?, ?, ?, ?)',
+      req.user.id, round2(total), paymentMethod, customerName?.trim() || null
     );
     for (const { p, qty } of lines) {
-      await c.query(
+      run(
         `INSERT INTO sale_items (sale_id, product_id, product_name, quantity, unit_price, cost_price)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [s.id, p.id, p.name, qty, p.selling_price, p.cost_price]
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        id, p.id, p.name, qty, p.selling_price, p.cost_price
       );
-      await c.query('UPDATE products SET quantity = quantity - $2, updated_at = now() WHERE id = $1', [p.id, qty]);
-      await c.query(
-        `INSERT INTO stock_movements (product_id, user_id, change, reason, sale_id) VALUES ($1, $2, $3, 'sale', $4)`,
-        [p.id, req.user.id, -qty, s.id]
+      run('UPDATE products SET quantity = quantity - ?, updated_at = ? WHERE id = ?', qty, now(), p.id);
+      run(
+        `INSERT INTO stock_movements (product_id, user_id, change, reason, sale_id) VALUES (?, ?, ?, 'sale', ?)`,
+        p.id, req.user.id, -qty, id
       );
     }
-    return s.id;
+    return id;
   });
 
-  res.status(201).json(await loadSale(sale, req.user));
-}));
+  res.status(201).json(loadSale(saleId, req.user));
+});
 
-async function loadSale(id, user) {
-  const { rows: [sale] } = await query(
+function loadSale(id, user) {
+  const sale = get(
     `SELECT s.*, u.name AS seller_name, v.name AS voided_by_name
      FROM sales s JOIN users u ON u.id = s.user_id LEFT JOIN users v ON v.id = s.voided_by
-     WHERE s.id = $1`,
-    [id]
+     WHERE s.id = ?`,
+    id
   );
   if (!sale) return null;
-  const { rows: items } = await query(
-    'SELECT id, product_id, product_name, quantity, unit_price, cost_price FROM sale_items WHERE sale_id = $1 ORDER BY id',
-    [id]
+  const items = all(
+    'SELECT id, product_id, product_name, quantity, unit_price, cost_price FROM sale_items WHERE sale_id = ? ORDER BY id',
+    id
   );
   sale.items = user.role === 'admin' ? items : items.map(({ cost_price, ...rest }) => rest);
   return sale;
@@ -89,53 +81,62 @@ async function loadSale(id, user) {
  * List sales. ?from=YYYY-MM-DD&to=YYYY-MM-DD
  * Attendants only see their own sales.
  */
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', (req, res) => {
   const params = [];
   const conds = [];
-  if (req.query.from) { params.push(req.query.from); conds.push(`s.created_at >= $${params.length}::date`); }
-  if (req.query.to) { params.push(req.query.to); conds.push(`s.created_at < $${params.length}::date + 1`); }
-  if (req.user.role !== 'admin') { params.push(req.user.id); conds.push(`s.user_id = $${params.length}`); }
+  if (req.query.from) {
+    if (!isDate(req.query.from)) throw new HttpError(400, 'Dates must be YYYY-MM-DD');
+    conds.push('s.created_at >= ?');
+    params.push(req.query.from);
+  }
+  if (req.query.to) {
+    if (!isDate(req.query.to)) throw new HttpError(400, 'Dates must be YYYY-MM-DD');
+    conds.push(`s.created_at < date(?, '+1 day')`);
+    params.push(req.query.to);
+  }
+  if (req.user.role !== 'admin') {
+    conds.push('s.user_id = ?');
+    params.push(req.user.id);
+  }
 
-  const { rows } = await query(
+  res.json(all(
     `SELECT s.*, u.name AS seller_name,
-       (SELECT COALESCE(SUM(quantity), 0)::int FROM sale_items WHERE sale_id = s.id) AS item_count
+       (SELECT COALESCE(SUM(quantity), 0) FROM sale_items WHERE sale_id = s.id) AS item_count
      FROM sales s JOIN users u ON u.id = s.user_id
      ${conds.length ? 'WHERE ' + conds.join(' AND ') : ''}
-     ORDER BY s.created_at DESC LIMIT 500`,
-    params
-  );
-  res.json(rows);
-}));
+     ORDER BY s.created_at DESC, s.id DESC LIMIT 500`,
+    ...params
+  ));
+});
 
-router.get('/:id', asyncHandler(async (req, res) => {
-  const sale = await loadSale(Number(req.params.id), req.user);
+router.get('/:id', (req, res) => {
+  const sale = loadSale(Number(req.params.id), req.user);
   if (!sale || (req.user.role !== 'admin' && sale.user_id !== req.user.id)) throw new HttpError(404, 'Sale not found');
   res.json(sale);
-}));
+});
 
 // Owner can void a sale (e.g. a mistake or a return). Stock is put back.
-router.post('/:id/void', requireAdmin, asyncHandler(async (req, res) => {
+router.post('/:id/void', requireAdmin, (req, res) => {
   const reason = req.body?.reason?.trim();
   if (!reason) throw new HttpError(400, 'Please give a reason for voiding');
   const id = Number(req.params.id);
 
-  await withTransaction(async (c) => {
-    const { rows: [sale] } = await c.query('SELECT * FROM sales WHERE id = $1 FOR UPDATE', [id]);
+  transaction(() => {
+    const sale = get('SELECT * FROM sales WHERE id = ?', id);
     if (!sale) throw new HttpError(404, 'Sale not found');
     if (sale.voided_at) throw new HttpError(400, 'This sale is already voided');
 
-    const { rows: items } = await c.query('SELECT * FROM sale_items WHERE sale_id = $1 ORDER BY product_id', [id]);
-    for (const it of items) {
-      await c.query('UPDATE products SET quantity = quantity + $2, updated_at = now() WHERE id = $1', [it.product_id, it.quantity]);
-      await c.query(
-        `INSERT INTO stock_movements (product_id, user_id, change, reason, note, sale_id) VALUES ($1, $2, $3, 'void', $4, $5)`,
-        [it.product_id, req.user.id, it.quantity, reason, id]
+    for (const it of all('SELECT * FROM sale_items WHERE sale_id = ?', id)) {
+      run('UPDATE products SET quantity = quantity + ?, updated_at = ? WHERE id = ?', it.quantity, now(), it.product_id);
+      run(
+        `INSERT INTO stock_movements (product_id, user_id, change, reason, note, sale_id) VALUES (?, ?, ?, 'void', ?, ?)`,
+        it.product_id, req.user.id, it.quantity, reason, id
       );
     }
-    await c.query('UPDATE sales SET voided_at = now(), voided_by = $2, void_reason = $3 WHERE id = $1', [id, req.user.id, reason]);
+    run('UPDATE sales SET voided_at = ?, voided_by = ?, void_reason = ? WHERE id = ?', now(), req.user.id, reason, id);
   });
 
-  res.json(await loadSale(id, req.user));
-}));
+  res.json(loadSale(id, req.user));
+});
 
 export default router;

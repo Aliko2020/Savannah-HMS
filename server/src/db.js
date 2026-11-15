@@ -1,70 +1,77 @@
 import fs from 'node:fs';
-import pg from 'pg';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { DatabaseSync } from 'node:sqlite';
 import bcrypt from 'bcryptjs';
 
-// Return NUMERIC columns as JS numbers instead of strings.
-pg.types.setTypeParser(1700, (v) => (v === null ? null : parseFloat(v)));
-// Return DATE columns as 'YYYY-MM-DD' strings (avoids timezone shifts).
-pg.types.setTypeParser(1082, (v) => v);
+// The whole database is this one file. Copy it to back up your data.
+const serverDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const dbFile = path.resolve(serverDir, process.env.DB_FILE || 'data/savannah.db');
+export const dataDir = path.dirname(dbFile);
+fs.mkdirSync(dataDir, { recursive: true });
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  console.error('DATABASE_URL is not set. Copy server/.env.example to server/.env and fill it in.');
-  process.exit(1);
+const db = new DatabaseSync(dbFile);
+db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
+
+// SQLite stores true/false as 1/0; turn these back into booleans for the app.
+const BOOL_COLUMNS = ['active', 'requires_prescription'];
+function toRow(row) {
+  if (!row) return row;
+  const out = { ...row };
+  for (const c of BOOL_COLUMNS) if (c in out) out[c] = Boolean(out[c]);
+  return out;
 }
+// SQLite can't store JS booleans or undefined directly.
+const toParam = (v) => (v === true ? 1 : v === false ? 0 : v === undefined ? null : v);
 
-const isLocal = /localhost|127\.0\.0\.1/.test(connectionString);
-export const pool = new pg.Pool({
-  connectionString,
-  ssl: isLocal ? false : { rejectUnauthorized: false },
-  max: 5,
-});
+/** All matching rows. */
+export const all = (sql, ...params) => db.prepare(sql).all(...params.map(toParam)).map(toRow);
+/** First matching row, or undefined. */
+export const get = (sql, ...params) => toRow(db.prepare(sql).get(...params.map(toParam)));
+/** Run an INSERT/UPDATE/DELETE. Returns { changes, lastInsertRowid }. */
+export const run = (sql, ...params) => db.prepare(sql).run(...params.map(toParam));
 
-// The shop's local timezone, so "today" and daily reports match the shop's clock.
-export const TIMEZONE = process.env.APP_TIMEZONE || 'UTC';
-try {
-  new Intl.DateTimeFormat('en', { timeZone: TIMEZONE });
-} catch {
-  console.error(`APP_TIMEZONE "${TIMEZONE}" is not a valid timezone (example: Africa/Nairobi)`);
-  process.exit(1);
-}
-pool.on('connect', (client) => client.query(`SET TIME ZONE '${TIMEZONE}'`));
-
-/** Today's date in the shop's timezone, as YYYY-MM-DD. */
-export const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: TIMEZONE }).format(new Date());
-
-export const query = (text, params) => pool.query(text, params);
-
-/** Run fn(client) inside a transaction. */
-export async function withTransaction(fn) {
-  const client = await pool.connect();
+/**
+ * Run fn() as one transaction: either every change is saved, or none are.
+ * fn must be synchronous (node:sqlite is), so no other request can run in the middle.
+ */
+export function transaction(fn) {
+  db.exec('BEGIN IMMEDIATE');
   try {
-    await client.query('BEGIN');
-    const result = await fn(client);
-    await client.query('COMMIT');
+    const result = fn();
+    db.exec('COMMIT');
     return result;
   } catch (err) {
-    await client.query('ROLLBACK');
+    db.exec('ROLLBACK');
     throw err;
-  } finally {
-    client.release();
   }
 }
 
-/** Create tables and the first admin account if the database is empty. */
-export async function initDb() {
-  const schema = fs.readFileSync(new URL('./schema.sql', import.meta.url), 'utf8');
-  await pool.query(schema);
+/** Today's date on this computer's clock, as YYYY-MM-DD. */
+export function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
-  const { rows } = await pool.query('SELECT COUNT(*)::int AS n FROM users');
-  if (rows[0].n === 0) {
-    const username = process.env.ADMIN_USERNAME || 'admin';
+/** Current time on this computer's clock, as YYYY-MM-DDTHH:MM:SS. */
+export const now = () => get(`SELECT strftime('%Y-%m-%dT%H:%M:%S', 'now', 'localtime') AS t`).t;
+
+export const round2 = (n) => Math.round(n * 100) / 100;
+
+export const isUniqueError = (err) => /UNIQUE constraint failed/.test(err?.message || '');
+
+/** Create tables and the first admin account if the database is empty. */
+export function initDb() {
+  db.exec(fs.readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
+
+  if (get('SELECT COUNT(*) AS n FROM users').n === 0) {
+    const username = (process.env.ADMIN_USERNAME || 'admin').toLowerCase();
     const password = process.env.ADMIN_PASSWORD || 'admin123';
-    const hash = await bcrypt.hash(password, 10);
-    await pool.query(
-      `INSERT INTO users (name, username, password_hash, role) VALUES ($1, $2, $3, 'admin')`,
-      ['Shop Owner', username, hash]
+    run(
+      `INSERT INTO users (name, username, password_hash, role) VALUES (?, ?, ?, 'admin')`,
+      'Shop Owner', username, bcrypt.hashSync(password, 10)
     );
     console.log(`Created first admin account "${username}". Log in and change the password.`);
   }
+  console.log(`Database: ${dbFile}`);
 }

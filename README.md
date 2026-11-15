@@ -1,7 +1,7 @@
 # Savannah HMS
 
 A drug store management app for the shop **owner** and **attendants**.
-Built with React (frontend), Node.js/Express (backend) and PostgreSQL (free cloud database on [Neon](https://neon.tech)).
+Built with React (frontend), Node.js/Express (backend) and SQLite (a database stored as a single file, with no account or setup needed).
 
 ## Features
 
@@ -27,50 +27,34 @@ Safety checks built in:
 
 ## Setup on your computer (Windows)
 
-You need **Node.js 18 or newer** ([download](https://nodejs.org)) and **Git**.
+You need **Node.js 22.5 or newer** ([download](https://nodejs.org)) and **Git**. Nothing else: the database is built into Node.js.
 
-### 1. Get a free database
-1. Sign up at https://neon.tech and create a project.
-2. Copy the **connection string**. It looks like `postgresql://user:pass@ep-xxx.neon.tech/neondb?sslmode=require`.
-
-### 2. Get the code and install
 ```bash
 git clone https://github.com/Aliko2020/Savannah-HMS.git
 cd Savannah-HMS
-npm install
 npm run install-all
-```
-
-### 3. Configure
-Copy `server/.env.example` to `server/.env` and fill in:
-- `DATABASE_URL`: your Neon connection string
-- `JWT_SECRET`: any long random text (30+ characters)
-- `ADMIN_USERNAME` / `ADMIN_PASSWORD`: the first owner login
-- `APP_TIMEZONE`: your timezone, e.g. `Africa/Nairobi`
-
-Optionally copy `client/.env.example` to `client/.env` to set your currency symbol and shop name.
-
-### 4. Run
-```bash
+npm install
 npm run dev
 ```
-Open http://localhost:5173 and log in with the admin username and password. **Change the password** under your name (top right) → My account.
 
-The database tables are created automatically on first start.
+Open http://localhost:5173 and log in as **admin** / **admin123**. **Change the password** right away: click your name (top right) → My account.
 
-## Put it online (free)
+The database is created automatically the first time you start the app.
 
-Deploy as one web service on [Render](https://render.com):
-1. New → **Web Service** → connect this GitHub repo.
-2. **Build command:** `npm run build`
-3. **Start command:** `npm start`
-4. Under **Environment**, add the same variables as `server/.env`, plus `VITE_CURRENCY` and `VITE_SHOP_NAME` if you want them.
+Optional settings:
+- `client/.env` (copy from `client/.env.example`): currency symbol and shop name.
+- `server/.env` (copy from `server/.env.example`): first admin login, database location, port.
 
-Render's free tier sleeps after 15 minutes of no use, so the first page load after that takes about 30 seconds.
+### Using it on the shop's other devices
+While the app runs on the shop PC, phones and laptops on the **same Wi-Fi** can open it at `http://<shop-PC-IP>:5173`. To find the PC's IP address, run `ipconfig` and look for "IPv4 Address". If it doesn't open, allow Node.js through Windows Firewall when asked.
+
+### Backups
+All your data is in **one file**: `server/data/savannah.db`. To back it up, stop the app and copy that file (e.g. to a USB stick or Google Drive). To restore, put the copy back in the same place.
 
 ## Project structure
 ```
 server/            Express API
+  data/            the database file (created on first run, not in git)
   src/index.js     app entry, serves the built React app in production
   src/schema.sql   database tables
   src/routes/      auth, users, products, sales, reports

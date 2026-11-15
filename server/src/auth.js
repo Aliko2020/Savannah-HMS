@@ -1,11 +1,22 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
 import jwt from 'jsonwebtoken';
-import { query } from './db.js';
+import { get, dataDir } from './db.js';
 
-const SECRET = process.env.JWT_SECRET;
-if (!SECRET) {
-  console.error('JWT_SECRET is not set. Add a long random string to server/.env.');
-  process.exit(1);
+/**
+ * Secret used to sign logins. Uses JWT_SECRET if set; otherwise one is generated
+ * once and kept next to the database, so you don't have to set anything up.
+ */
+function loadSecret() {
+  if (process.env.JWT_SECRET) return process.env.JWT_SECRET;
+  const file = path.join(dataDir, '.jwt-secret');
+  if (fs.existsSync(file)) return fs.readFileSync(file, 'utf8').trim();
+  const secret = crypto.randomBytes(48).toString('hex');
+  fs.writeFileSync(file, secret, { mode: 0o600 });
+  return secret;
 }
+const SECRET = loadSecret();
 
 export function signToken(user) {
   return jwt.sign({ id: user.id, role: user.role }, SECRET, { expiresIn: '12h' });
@@ -20,11 +31,7 @@ export async function requireAuth(req, res, next) {
   try {
     const payload = jwt.verify(token, SECRET);
     // Re-check the database so deactivated users and role changes take effect immediately.
-    const { rows } = await query(
-      'SELECT id, name, username, role, active FROM users WHERE id = $1',
-      [payload.id]
-    );
-    const user = rows[0];
+    const user = get('SELECT id, name, username, role, active FROM users WHERE id = ?', payload.id);
     if (!user || !user.active) return res.status(401).json({ error: 'Account disabled' });
     req.user = user;
     next();

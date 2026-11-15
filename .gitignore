@@ -6,3 +6,7 @@ dist/
 .neon
 .env.local
 .env.*.local
+server/data/
+*.db
+*.db-wal
+*.db-shm
