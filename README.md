@@ -26,7 +26,27 @@ Safety checks built in:
 - Prices always come from the database, so they can't be changed from the browser.
 - Disabled staff are logged out immediately.
 
-## Setup on your computer (Windows)
+## Starting the app (for shop staff)
+
+Double-click the **Savannah Pharmacy** icon on the Desktop. The app opens in the browser.
+- Keep the black window open while you use the app (you can minimise it).
+- To close the app, close the black window. A backup is saved automatically.
+- If the browser tab gets closed, double-click the icon again. It just reopens the app.
+
+### One-time setup (Windows)
+1. Install **Node.js** (LTS) from https://nodejs.org and **Git** from https://git-scm.com.
+2. Download the app: open a terminal in the Desktop folder and run
+   `git clone https://github.com/Aliko2020/Savannah-HMS.git`
+3. Open the **Savannah-HMS** folder and double-click **Create Desktop Shortcut**.
+   It also asks whether the app should start by itself when the PC is switched on.
+4. Double-click the new **Savannah Pharmacy** icon. The first start takes a few minutes
+   (it needs internet to finish installing). After that it starts in seconds.
+5. Log in as **admin** / **admin123**, change the password, then fill in **Settings**.
+
+### Updating
+Close the app, then double-click **Update Savannah** in the Savannah-HMS folder.
+
+## Setup for developers
 
 You need **Node.js 22.5 or newer** ([download](https://nodejs.org)) and **Git**. Nothing else: the database is built into Node.js.
 
@@ -38,7 +58,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173 and log in as **admin** / **admin123**. **Change the password** right away: click your name (top right) → My account.
+This runs a development version with live reload. Open http://localhost:5173 and log in as **admin** / **admin123**. **Change the password** right away: click your name (top right) → My account.
 
 The database is created automatically the first time you start the app.
 
@@ -56,7 +76,7 @@ Optional: `server/.env` (copy from `server/.env.example`) changes the first admi
    Chrome and Edge remember these choices for next time.
 
 ### Using it on the shop's other devices
-While the app runs on the shop PC, phones and laptops on the **same Wi-Fi** can open it at `http://<shop-PC-IP>:5173`. To find the PC's IP address, run `ipconfig` and look for "IPv4 Address". If it doesn't open, allow Node.js through Windows Firewall when asked.
+While the app runs on the shop PC, phones and laptops on the **same Wi-Fi** can open it too. The black window shows the address to use (e.g. `http://192.168.1.20:4000`). If it doesn't open, allow Node.js through Windows Firewall when asked.
 
 ### Backups (automatic)
 The app saves a full copy of your data to a **Savannah Backups** folder on the Desktop:

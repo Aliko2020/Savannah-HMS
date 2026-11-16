@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import path from 'node:path';
 import fs from 'node:fs';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { initDb } from './db.js';
@@ -44,4 +45,24 @@ app.use((err, _req, res, _next) => {
 const port = Number(process.env.PORT) || 4000;
 initDb();
 startAutoBackup();
-app.listen(port, () => console.log(`Savannah HMS API running on http://localhost:${port}`));
+const server = app.listen(port, () => {
+  console.log(`Savannah HMS API running on http://localhost:${port}`);
+  if (fs.existsSync(clientDist)) {
+    // Addresses other phones/computers on the same Wi-Fi can use.
+    const lan = Object.values(os.networkInterfaces())
+      .flat()
+      .filter((a) => a && a.family === 'IPv4' && !a.internal)
+      .map((a) => `http://${a.address}:${port}`);
+    console.log('');
+    console.log('  Open the app on this computer:  http://localhost:' + port);
+    if (lan.length) console.log('  On other devices (same Wi-Fi):  ' + lan.join('   '));
+    console.log('');
+  }
+});
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\nThe app is already running (port ${port} is in use). Open http://localhost:${port} in your browser.\n`);
+    process.exit(1);
+  }
+  throw err;
+});
