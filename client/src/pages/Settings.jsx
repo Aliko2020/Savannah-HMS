@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSettings } from '../SettingsContext.jsx';
 import { receiptHtml } from './Receipt.jsx';
 import Backups from './Backups.jsx';
+import LicenceCard from './LicenceCard.jsx';
 
 const SAMPLE_SALE = {
   id: 1024,
@@ -65,6 +66,7 @@ export default function Settings() {
         </form>
 
         <div className="settings-side">
+        <LicenceCard />
         <Backups />
         <div className="card">
           <h2>Receipt preview</h2>

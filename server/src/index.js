@@ -13,11 +13,31 @@ import reportRoutes from './routes/reports.js';
 import settingsRoutes from './routes/settings.js';
 import backupRoutes from './routes/backups.js';
 import { startAutoBackup } from './backup.js';
+import licenceRoutes from './routes/licence.js';
+import { licenceStatus, LOCKED_STATES, CONTACT } from './licence.js';
 
 const app = express();
 app.use(express.json({ limit: '100kb' }));
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
+app.use('/api/licence', licenceRoutes);
+
+// Licence guard. Not activated: only the activation screen works.
+// Expired: everything can be viewed, but no new sales until renewed.
+app.use('/api', (req, res, next) => {
+  if (req.method === 'GET' && req.path.startsWith('/settings')) return next(); // shop name for the activation screen
+  const lic = licenceStatus();
+  if (LOCKED_STATES.includes(lic.state)) {
+    return res.status(402).json({ error: 'This copy of Savannah Pharmacy is not activated.', licence: lic.state });
+  }
+  if (lic.state === 'expired' && req.method === 'POST' && req.path === '/sales') {
+    return res.status(402).json({
+      error: `The licence expired on ${lic.expires}. New sales are paused until it is renewed. Call ${CONTACT.name} on ${CONTACT.phone}.`,
+      licence: lic.state,
+    });
+  }
+  next();
+});
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);

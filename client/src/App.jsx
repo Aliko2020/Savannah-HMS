@@ -1,6 +1,8 @@
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './AuthContext.jsx';
 import { useSettings } from './SettingsContext.jsx';
+import { useLicence } from './LicenceContext.jsx';
+import { AlertIcon } from './Icons.jsx';
 import Login from './pages/Login.jsx';
 import Sell from './pages/Sell.jsx';
 import Inventory from './pages/Inventory.jsx';
@@ -14,6 +16,7 @@ import Settings from './pages/Settings.jsx';
 export default function App() {
   const { user, loading, logout, isAdmin } = useAuth();
   const { settings } = useSettings();
+  const { licence, expired, expiringSoon } = useLicence();
 
   if (loading) return <div className="center muted">Loading…</div>;
   if (!user) return <Login />;
@@ -44,6 +47,18 @@ export default function App() {
           <button className="btn small ghost" onClick={logout}>Log out</button>
         </div>
       </header>
+      {(expired || expiringSoon) && (
+        <div className={'licence-banner ' + (expired ? 'critical' : 'warn')} role="alert">
+          <AlertIcon size={18} />
+          <span>
+            {expired
+              ? <>The licence expired on <strong>{licence.expires}</strong>. You can view your records, but new sales are paused.</>
+              : <>The licence has <strong>{licence.daysLeft} day{licence.daysLeft === 1 ? '' : 's'} left</strong> (valid until {licence.expires}).</>}
+            {' '}Call {licence.contact.name} on <a href={`tel:${licence.contact.phone}`}>{licence.contact.phone}</a> to renew
+            {isAdmin && <>, then enter the new key in <NavLink to="/settings">Settings</NavLink></>}.
+          </span>
+        </div>
+      )}
       <main>
         <Routes>
           <Route path="/sell" element={<Sell />} />

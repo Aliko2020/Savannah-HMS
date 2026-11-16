@@ -46,6 +46,12 @@ Double-click the **Savannah Pharmacy** icon on the Desktop. The app opens in the
 ### Updating
 Close the app, then double-click **Update Savannah** in the Savannah-HMS folder.
 
+### Licence key
+The first time the app starts on a computer, it shows an **Activate** screen with that computer's
+**Machine ID**. Tap **Send on WhatsApp** to send it to Amos Aliko (0507363607), then paste the
+licence key you receive. Keys last 3 months; the app reminds you 14 days before the end date.
+To renew, go to **Settings → Licence → Enter a new licence key**.
+
 ## Setup for developers
 
 You need **Node.js 22.5 or newer** ([download](https://nodejs.org)) and **Git**. Nothing else: the database is built into Node.js.
@@ -106,3 +112,7 @@ server/            Express API
 client/            React app (Vite)
   src/pages/       Sell, Inventory, Sales, Dashboard, Staff, Stock log, Account
 ```
+
+## Licence and copyright
+Copyright (c) 2026 Amos Aliko (edusavannah.com). All rights reserved. See [LICENSE](LICENSE).
+Licence keys are made with the tool in [`licence-tool/`](licence-tool/README.md).

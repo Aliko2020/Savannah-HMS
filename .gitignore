@@ -10,3 +10,7 @@ server/data/
 *.db
 *.db-wal
 *.db-shm
+
+# Licence signing keys must never be committed
+*.pem
+issued-keys.csv

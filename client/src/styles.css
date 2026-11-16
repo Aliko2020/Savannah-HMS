@@ -267,3 +267,32 @@ li .num { display: flex; flex-direction: column; align-items: flex-end; white-sp
   .brand { flex: 1; }
   .topbar nav { order: 3; flex-basis: 100%; flex-wrap: nowrap; overflow-x: auto; }
 }
+
+/* Licence */
+.activate { width: 100%; max-width: 520px; padding: 2rem 1.75rem 1.25rem; box-shadow: 0 10px 30px rgba(15, 123, 108, 0.12); }
+.activate h1 { color: var(--primary); text-align: center; }
+.center-text { text-align: center; }
+.steps { padding-left: 1.2rem; margin: 1.25rem 0 0; }
+.steps > li { margin-bottom: 1.25rem; }
+.steps > li > strong { display: block; margin-bottom: 0.6rem; }
+.machine-id { display: flex; align-items: center; gap: 0.6rem; }
+.machine-id code { white-space: nowrap; font-size: 1.15rem; font-weight: 700; letter-spacing: 0.06em; background: #eef0f2; padding: 0.4rem 0.7rem; border-radius: 8px; }
+.contact-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
+.contact-buttons .btn, .btn.full { text-decoration: none; }
+.btn.full { width: 100%; margin-bottom: 0.6rem; }
+.btn.whatsapp { background: #1f8f4e; border-color: #1f8f4e; color: #fff; }
+.btn.whatsapp:hover:not(:disabled) { background: #187a41; }
+.key-form textarea { font: 0.85rem/1.4 Consolas, "Courier New", monospace; padding: 0.6rem; border: 1px solid var(--border); border-radius: 8px; width: 100%; resize: vertical; word-break: break-all; }
+.key-form .btn { width: 100%; }
+.copyright { text-align: center; font-size: 0.78rem; margin: 0.4rem 0 0; }
+.licence-banner { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.7rem 1.25rem; font-size: 0.92rem; }
+.licence-banner svg { flex-shrink: 0; margin-top: 2px; }
+.licence-banner.warn { background: #fdf3e1; color: #6e4800; border-bottom: 1px solid #f3dcae; }
+.licence-banner.critical { background: #fbe9e9; color: #8f1f1f; border-bottom: 1px solid #f1c4c4; }
+.licence-banner a { color: inherit; font-weight: 600; }
+.backup-status.warn { background: #fdf3e1; color: #8a5a00; }
+.licence-details { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem 1rem; align-items: center; margin: 0.5rem 0 1rem; font-size: 0.92rem; }
+.licence-details dt { color: var(--muted); }
+.licence-details dd { margin: 0; min-width: 0; }
+.licence-details .machine-id { flex-wrap: wrap; gap: 0.4rem; }
+.licence-details .machine-id code { font-size: 0.85rem; }

@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
 import { useSettings } from '../SettingsContext.jsx';
 import { PharmacyIcon, PillIcon, UserIcon, LockIcon, EyeIcon, EyeOffIcon, LoginIcon } from '../Icons.jsx';
+import { useLicence } from '../LicenceContext.jsx';
 
 export default function Login() {
   const { login } = useAuth();
   const { settings } = useSettings();
+  const { licence } = useLicence();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -76,6 +78,7 @@ export default function Login() {
         <p className="login-foot muted">
           <PillIcon size={14} /> {settings.phone ? `Tel: ${settings.phone}` : 'Pharmacy management'}
         </p>
+        <p className="copyright muted">© {new Date().getFullYear()} {licence.contact?.name || 'Amos Aliko'} · {licence.contact?.website || 'edusavannah.com'}</p>
       </form>
     </div>
   );

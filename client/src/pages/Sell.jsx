@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, money, localDate, PAY_LABEL } from '../api.js';
 import Receipt from './Receipt.jsx';
+import { useLicence } from '../LicenceContext.jsx';
 
 export default function Sell() {
   const [search, setSearch] = useState('');
@@ -14,6 +15,7 @@ export default function Sell() {
   const [receipt, setReceipt] = useState(null);
   const searchRef = useRef(null);
   const today = localDate();
+  const { expired } = useLicence();
 
   // Search as you type (short delay so we don't call the API on every key).
   useEffect(() => {
@@ -171,8 +173,8 @@ export default function Sell() {
           </label>
         )}
 
-        <button className="btn primary big" disabled={!cart.length || busy} onClick={checkout}>
-          {busy ? 'Saving…' : `Complete sale · ${money(total)}`}
+        <button className="btn primary big" disabled={!cart.length || busy || expired} onClick={checkout}>
+          {expired ? 'Sales paused: licence expired' : busy ? 'Saving…' : `Complete sale · ${money(total)}`}
         </button>
         {cart.length > 0 && (
           <button className="btn ghost" onClick={() => setCart([])}>Clear</button>
