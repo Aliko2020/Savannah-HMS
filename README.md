@@ -58,8 +58,23 @@ Optional: `server/.env` (copy from `server/.env.example`) changes the first admi
 ### Using it on the shop's other devices
 While the app runs on the shop PC, phones and laptops on the **same Wi-Fi** can open it at `http://<shop-PC-IP>:5173`. To find the PC's IP address, run `ipconfig` and look for "IPv4 Address". If it doesn't open, allow Node.js through Windows Firewall when asked.
 
-### Backups
-All your data is in **one file**: `server/data/savannah.db`. To back it up, stop the app and copy that file (e.g. to a USB stick or Google Drive). To restore, put the copy back in the same place.
+### Backups (automatic)
+The app saves a full copy of your data to a **Savannah Backups** folder on the Desktop:
+- when the app starts,
+- every 3 hours while it's open (if anything changed), and at least once a day,
+- when you close it with **Ctrl+C**.
+
+It keeps the newest 60 copies and deletes older ones. The owner can also click **Back up now** on the **Settings** page, which shows when the last backup was made.
+
+For extra safety, copy the **Savannah Backups** folder to a USB stick or Google Drive now and then. If the PC dies, that copy is what saves you.
+
+**To restore a backup:**
+1. Stop the app (Ctrl+C).
+2. Pick a file in `Desktop\Savannah Backups` (the name has the date and time, e.g. `savannah-2026-11-16_18-30-00.db`).
+3. Copy it to `server\data\`, and rename it to `savannah.db` (replacing the old one).
+4. Start the app again with `npm run dev`.
+
+To save backups somewhere else, set `BACKUP_DIR` in `server/.env`.
 
 ## Project structure
 ```

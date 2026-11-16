@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSettings } from '../SettingsContext.jsx';
 import { receiptHtml } from './Receipt.jsx';
+import Backups from './Backups.jsx';
 
 const SAMPLE_SALE = {
   id: 1024,
@@ -63,11 +64,14 @@ export default function Settings() {
           <button className="btn primary" disabled={busy}>{busy ? 'Saving…' : 'Save settings'}</button>
         </form>
 
+        <div className="settings-side">
+        <Backups />
         <div className="card">
           <h2>Receipt preview</h2>
           <div className="receipt-preview">
             <iframe title="Receipt preview" srcDoc={preview} style={{ width: f.paper_width === '58' ? '58mm' : '80mm', height: '420px' }} />
           </div>
+        </div>
         </div>
       </div>
     </div>

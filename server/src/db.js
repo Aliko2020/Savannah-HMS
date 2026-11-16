@@ -10,7 +10,7 @@ const dbFile = path.resolve(serverDir, process.env.DB_FILE || 'data/savannah.db'
 export const dataDir = path.dirname(dbFile);
 fs.mkdirSync(dataDir, { recursive: true });
 
-const db = new DatabaseSync(dbFile);
+export const db = new DatabaseSync(dbFile);
 db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
 
 // SQLite stores true/false as 1/0; turn these back into booleans for the app.
